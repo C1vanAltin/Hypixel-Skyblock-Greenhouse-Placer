@@ -114,7 +114,7 @@ int FitnessFunction() {//İleride birden fazla denetince hangi kombinasyonun en 
                 totalMutSlots++;
 
                 if (SpreadCheck(i, j)) {
-                    totalScore += 500;// Başarılı mutasyona ödül
+                    totalScore += 1000;// Başarılı mutasyona ödül
                     activeMutations++;
                 }
             }
@@ -129,16 +129,16 @@ int FitnessFunction() {//İleride birden fazla denetince hangi kombinasyonun en 
         for (int j = 0; j < 10; j++) {
             if (plot[i][j].isCrop) {
                 if (plot[i][j].helpsMutate) {
-                    totalScore += 5;// Mutasyona yarayan bitki ödülü
+                    totalScore += 50;// Mutasyona yarayan bitki ödülü
                 } else {
-                    totalScore -= 2;// Gereksiz bitki cezası
+                    totalScore -= 20;// Gereksiz bitki cezası
                 }
             }
         }
     }
 
     int inactiveMutSlots = totalMutSlots - activeMutations;
-    totalScore -= (inactiveMutSlots * 10);
+    totalScore -= (inactiveMutSlots * 50);
 
     return totalScore;
 }
@@ -294,7 +294,7 @@ Gen crossover(Gen& p1, Gen& p2) {
 void nextGen(Gen& ind) {
     for (int i = 0; i < 10; i++) {
         for (int j = 0; j < 10; j++) {
-            if (rand() % 1000 < 50) {
+            if (rand() % 1000 < 20) {
                 ind.genes[i][j] = getRandomGene();
             }
         }
@@ -501,8 +501,8 @@ int main() {
                 continue;
             }
 
-            int popSize = 300;
-            int genCount = 500;
+            int popSize = 600;
+            int genCount = 1200;
             int mutCount=0;
             Gen best = GeneticAlgorithm(popSize, genCount);
             evaluate(best);

@@ -1,10 +1,6 @@
-Duskbloom
-8
-Sunflower
-Sunflower
-Moonflower
-Moonflower
-Dustgrain
-Dustgrain
-Shadevine
-Shadevine
+Ashwreath
+4
+Nether Wart
+Nether Wart
+Fire
+Fire
