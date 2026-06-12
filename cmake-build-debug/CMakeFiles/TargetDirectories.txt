@@ -1,0 +1,3 @@
+C:/Users/CIVAN ALTIN/CLionProjects/GreenhouseOptimalCropPlacement/cmake-build-debug/CMakeFiles/GreenhouseOptimalCropPlacement.dir
+C:/Users/CIVAN ALTIN/CLionProjects/GreenhouseOptimalCropPlacement/cmake-build-debug/CMakeFiles/edit_cache.dir
+C:/Users/CIVAN ALTIN/CLionProjects/GreenhouseOptimalCropPlacement/cmake-build-debug/CMakeFiles/rebuild_cache.dir
