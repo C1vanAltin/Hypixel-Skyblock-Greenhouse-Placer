@@ -10,6 +10,7 @@ struct Slot {
     bool isCrop;
     bool mutSlot;
     bool helpsMutate;
+    int helpCount;
     string name;
     vector<string> reqsForMutation;
 };
@@ -33,6 +34,7 @@ void initPlot() {
             plot[i][j].mutSlot = false;
             plot[i][j].name = "";
             plot[i][j].helpsMutate = false;
+            plot[i][j].helpCount = 0;
             plot[i][j].reqsForMutation.clear();
         }
 }
@@ -42,6 +44,7 @@ void plant(string name,int i,int j) {
     plot[i][j].mutSlot = false;
     plot[i][j].helpsMutate = false;
     plot[i][j].name = name;
+    plot[i][j].helpCount = 0;
     plot[i][j].reqsForMutation.clear();
 }
 
@@ -50,6 +53,7 @@ void setAsSpreadSlot(string Mutname,int i,int j) {
     plot[i][j].mutSlot = true;
     plot[i][j].name = Mutname;
     plot[i][j].helpsMutate = false;
+    plot[i][j].helpCount = 0;
     plot[i][j].reqsForMutation.clear();
 
     for (const auto& m : DefinedMutations) {
@@ -59,10 +63,20 @@ void setAsSpreadSlot(string Mutname,int i,int j) {
         }
     }
 }
-
+// Belirtilen koordinattaki mutasyonun etrafındaki komşular tarafından karşılanıp karşılanmadığını kontrol eder
 bool SpreadCheck(int r, int c) {
-    // Belirtilen koordinattaki mutasyonun etrafındaki komşular tarafından karşılanıp karşılanmadığını kontrol eder
     if (!plot[r][c].mutSlot) return false;
+    // GÜVENLİK KONTROLÜ: Eğer mutasyonun istediği şart sayısı,
+    // o hücrenin fiziksel olarak sahip olabileceği komşu sayısından fazlaysa direkt elensin.
+    // (Örn: Kenarda 5, köşede 3 komşu olabilir. İstek 8 ise imkansızdır.)
+    int maxPossibleNeighbors = 8;
+    if (r == 0 || r == 9) maxPossibleNeighbors -= 3; // Üst veya alt kenar
+    if (c == 0 || c == 9) maxPossibleNeighbors -= 3; // Sol veya sağ kenar
+    if ((r == 0 || r == 9) && (c == 0 || c == 9)) maxPossibleNeighbors += 1; // Köşeler çift sayılmasın diye +1
+
+    if (plot[r][c].reqsForMutation.size() > maxPossibleNeighbors) {
+        return false;
+    }
 
     struct NeighborInfo { int row; int col; string name; };
     vector<NeighborInfo> neighbors;
@@ -87,6 +101,7 @@ bool SpreadCheck(int r, int c) {
         for (auto it = neighbors.begin(); it != neighbors.end(); ++it) {
             if (it->name == requiredCrop) {
                 plot[it->row][it->col].helpsMutate = true;
+                plot[it->row][it->col].helpCount++;
                 neighbors.erase(it);// birden fazla aynı crop için aynı crop u saymamak için
                 found = true;
                 break;
@@ -105,8 +120,10 @@ int FitnessFunction() {//İleride birden fazla denetince hangi kombinasyonun en 
     int totalMutSlots = 0;
 
     for (int i = 0; i < 10; i++)
-        for (int j = 0; j < 10; j++)
+        for (int j = 0; j < 10; j++) {
             plot[i][j].helpsMutate = false;
+            plot[i][j].helpCount=0;
+        }
 
     for (int i = 0; i < 10; i++) {
         for (int j = 0; j < 10; j++) {
@@ -114,7 +131,7 @@ int FitnessFunction() {//İleride birden fazla denetince hangi kombinasyonun en 
                 totalMutSlots++;
 
                 if (SpreadCheck(i, j)) {
-                    totalScore += 1000;// Başarılı mutasyona ödül
+                    totalScore += 1500;// Başarılı mutasyona ödül
                     activeMutations++;
                 }
             }
@@ -129,10 +146,11 @@ int FitnessFunction() {//İleride birden fazla denetince hangi kombinasyonun en 
         for (int j = 0; j < 10; j++) {
             if (plot[i][j].isCrop) {
                 if (plot[i][j].helpsMutate) {
-                    totalScore += 50;// Mutasyona yarayan bitki ödülü
+                    totalScore += 50 + (plot[i][j].helpCount*60);// Mutasyona yarayan bitki ödülü
                 } else {
                     totalScore -= 20;// Gereksiz bitki cezası
                 }
+
             }
         }
     }
@@ -269,22 +287,18 @@ Gen BestInGen(vector<Gen>& population) {
 
     return best;
 }
-
 Gen crossover(Gen& p1, Gen& p2) {
     Gen child;
     child.fitness = 0;
 
-    int cut = rand() % 100;
-    int counter = 0;
-
     for (int i = 0; i < 10; i++) {
         for (int j = 0; j < 10; j++) {
-            if (counter < cut)
+            // Yazı-tura atar gibi %50 şansla p1 veya p2'den geni alıyoruz
+            if (rand() % 2 == 0) {
                 child.genes[i][j] = p1.genes[i][j];
-            else
+            } else {
                 child.genes[i][j] = p2.genes[i][j];
-
-            counter++;
+            }
         }
     }
 
@@ -294,7 +308,7 @@ Gen crossover(Gen& p1, Gen& p2) {
 void nextGen(Gen& ind) {
     for (int i = 0; i < 10; i++) {
         for (int j = 0; j < 10; j++) {
-            if (rand() % 1000 < 20) {
+            if (rand() % 1000 < 35) {
                 ind.genes[i][j] = getRandomGene();
             }
         }
@@ -501,7 +515,7 @@ int main() {
                 continue;
             }
 
-            int popSize = 600;
+            int popSize = 500;
             int genCount = 1200;
             int mutCount=0;
             Gen best = GeneticAlgorithm(popSize, genCount);
