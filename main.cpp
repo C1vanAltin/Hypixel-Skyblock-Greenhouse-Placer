@@ -315,10 +315,69 @@ void nextGen(Gen& ind) {
     }
 }
 
+void savePopulationToFile(const string& filename, const vector<Gen>& population, int count) {
+    ofstream outFile(filename);
+    if (!outFile) return;
+
+    int saveCount = min(count, (int)population.size());
+    outFile << saveCount << "\n";
+
+    for (int p = 0; p < saveCount; p++) {
+        outFile << population[p].fitness << "\n";
+        for (int i = 0; i < 10; i++) {
+            for (int j = 0; j < 10; j++) {
+                outFile << (population[p].genes[i][j].empty() ? "EMPTY" : population[p].genes[i][j]) << "\n";
+            }
+        }
+    }
+
+    outFile.close();
+}
+
+vector<Gen> loadPopulationFromFile(const string& filename) {
+    vector<Gen> loaded;
+    ifstream inFile(filename);
+    if (!inFile) return loaded;
+
+    int count;
+    if (!(inFile >> count)) return loaded;
+    inFile.ignore();
+
+    for (int p = 0; p < count; p++) {
+        Gen ind;
+        if (!(inFile >> ind.fitness)) break;
+        inFile.ignore();
+
+        bool valid = true;
+        for (int i = 0; i < 10 && valid; i++) {
+            for (int j = 0; j < 10 && valid; j++) {
+                string gene;
+                if (!getline(inFile, gene)) { valid = false; break; }
+                ind.genes[i][j] = (gene == "EMPTY") ? "" : gene;
+            }
+        }
+
+        if (valid) loaded.push_back(ind);
+    }
+
+    inFile.close();
+    return loaded;
+}
+
 Gen GeneticAlgorithm(int populationSize,int generations) {
+    string popFile = "best_population.txt";
     vector<Gen> population;
 
-    for (int i = 0; i < populationSize; i++) {
+    vector<Gen> remembered = loadPopulationFromFile(popFile);
+    if (!remembered.empty()) {
+        cout << "Loaded " << remembered.size() << " individuals from previous run." << endl;
+        for (Gen& ind : remembered) {
+            evaluate(ind);
+            population.push_back(ind);
+        }
+    }
+
+    while ((int)population.size() < populationSize) {
         Gen ind = createRandomIndividual();
         evaluate(ind);
         population.push_back(ind);
@@ -357,6 +416,9 @@ Gen GeneticAlgorithm(int populationSize,int generations) {
         [](const Gen& a, const Gen& b) {
             return a.fitness > b.fitness;
         });
+
+    savePopulationToFile(popFile, population, 20);
+    cout << "Saved top 20 individuals to " << popFile << " for next run." << endl;
 
     return population[0];
 }
@@ -415,7 +477,8 @@ int main() {
         cout << "3. Delete a mutation" << endl;
         cout << "4. List all Crops" << endl;
         cout << "5. Optimize the plot" << endl;
-        cout << "6. Save and Exit" << endl;
+        cout << "6. Clear saved population memory" << endl;
+        cout << "7. Save and Exit" << endl;
         cout << "Choose your option: ";
 
         if (!(cin >> choice)) {
@@ -515,7 +578,7 @@ int main() {
                 continue;
             }
 
-            int popSize = 500;
+            int popSize = 300;
             int genCount = 1200;
             int mutCount=0;
             Gen best = GeneticAlgorithm(popSize, genCount);
@@ -544,6 +607,11 @@ int main() {
             cout<<mutCount<<endl;
         }
         else if (choice == 6) {
+            ofstream clr("best_population.txt", ofstream::trunc);
+            clr.close();
+            cout << "Population memory cleared." << endl;
+        }
+        else if (choice == 7) {
             saveMutationsToFile(mutFile);
             break;
         }
